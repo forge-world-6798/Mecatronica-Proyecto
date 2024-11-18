@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <style>
+      body {
+        text-align: center;
+        font-family: "Trebuchet MS", Arial;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 0;
+      }
+      .slider {
+        width: 300px;
+      }
+      .topbar {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 150px;
+        background: rgba(75, 62, 3, 0.42);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(12.5px);
+        -webkit-backdrop-filter: blur(12.5px);
+      }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  </head>
+  <body
+    style="
+      background-image: url('fondo6.png');
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-size: 100% 100%;
+    "
+  >
+    <div class="topbar">
+      <h1 style="color: white">ESP32 with Servo</h1>
+      <p style="color: white">Position: <span id="servoPos"></span></p>
+      <input
+        type="range"
+        min="0"
+        max="180"
+        class="slider"
+        id="servoSlider"
+        onchange="servo(this.value)"
+        value="3"
+      />
+    </div>
+
+    <script>
+      var slider = document.getElementById("servoSlider");
+      var servoP = document.getElementById("servoPos");
+      servoP.innerHTML = slider.value;
+      slider.oninput = function () {
+        slider.value = this.value;
+        servoP.innerHTML = this.value;
+      };
+      $.ajaxSetup({ timeout: 1000 });
+      function servo(pos) {
+        $.get("/?value=" + pos + "&");
+        {
+          Connection: close;
+        }
+      }
+    </script>
+  </body>
+</html>

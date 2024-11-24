@@ -7,64 +7,325 @@
       body {
         text-align: center;
         font-family: "Trebuchet MS", Arial;
-        margin-left: auto;
-        margin-right: auto;
-        margin-top: 0;
+        margin: 0 0 0 0;
+        --color: rgb(255,255,255);
+        --inv-color: rgb(0,0,0);
       }
-      .slider {
-        width: 300px;
+
+      .rotated{
+        transform:rotate(180deg);
       }
-      .topbar {
+
+      .overlay-svg {
         position: absolute;
-        bottom: 0;
+        top: 10%;
+        left: 10%;
+        width: 80%;
+        height: 80%;
+      }
+
+      .time {
+        position: absolute;
+        top: 12%;
         width: 100%;
-        height: 150px;
-        background: rgba(75, 62, 3, 0.42);
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-        backdrop-filter: blur(12.5px);
-        -webkit-backdrop-filter: blur(12.5px);
+      }
+
+      .rotate-button {
+        position: absolute;
+        top: 15%;
+        right: 20%;
+        padding: 10px 10px 10px 10px;
+        width: 60px;
+        height: 60px;
+        &:hover {
+          background-color: rgb(0,0,255);
+        }
+        border-radius: 10px;
+      }
+
+      .text {
+        color: var(--color);
+        font-size: 40px;
+        opacity: 100%;
+      }
+
+      .button-container {
+        display: flex;
+        flex-direction: column;
+        gap: 5%;
+        position: absolute;
+        top: 35%;
+        left: 14%;
+        height: 30%;
+        width: 10%;
+      }
+
+      .button {
+        background-color: unset;
+        height: 50px;
+        width: 100%;
+        border-radius: 10px;
+
+        &:hover {
+          background-color: var(--color);
+          opacity: 50%;
+          .text {
+            color: var(--inv-color);
+          }
+        }
+      }
+
+      .selected {
+        background-color: var(--color);
+        opacity: 100%;
+        .text {
+          color: var(--inv-color);
+        }
+        &:hover {
+          opacity: 50%;
+        }
       }
     </style>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   </head>
-  <body
-    style="
-      background-image: url('fondo6.png');
-      background-repeat: no-repeat;
-      background-attachment: fixed;
-      background-size: 100% 100%;
-    "
-  >
-    <div class="topbar">
-      <h1 style="color: white">ESP32 with Servo</h1>
-      <p style="color: white">Position: <span id="servoPos"></span></p>
-      <input
-        type="range"
-        min="0"
-        max="180"
-        class="slider"
-        id="servoSlider"
-        onchange="servo(this.value)"
-        value="3"
-      />
-    </div>
-    <img src="data:image/jpeg;base64,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" width="100%" height="100%"/>
+  <body>
+    <img id="photo" src='fondo6.png' width="100%" height="100%"/>
 
+    <svg
+      viewBox="0 0 198.4375 132.29166"
+      version="1.1"
+      id="svg1"
+      xmlns="http://www.w3.org/2000/svg"
+      xmlns:svg="http://www.w3.org/2000/svg"
+      class="overlay-svg"
+      >
+      <defs
+        id="defs1" />
+      <g
+        id="layer1"
+        transform="translate(0.52916503)">
+        <g
+          id="g15"
+          transform="matrix(0.69710614,0,0,0.69710614,-11.021926,-10.098355)"
+          style="stroke-width:1.13863576;stroke-dasharray:none">
+          <ellipse
+            style="fill:#ffffff;fill-opacity:0;stroke:var(--color);stroke-width:1.13863576;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+            id="path1"
+            cx="157.78625"
+            cy="109.10783"
+            rx="25.571575"
+            ry="25.263485" />
+          <g
+            id="g4"
+            transform="matrix(1.530704,0,0,1,-97.449133,1.0264033e-5)"
+            style="stroke-width:0.92032074;stroke-dasharray:none">
+            <path
+              style="fill:#ffffff;fill-opacity:0;stroke:var(--color);stroke-width:0.92032074;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+              d="m 177.24403,109.37241 h 6.37837"
+              id="path3" />
+            <path
+              style="fill:#ffffff;fill-opacity:0;stroke:var(--color);stroke-width:0.92032074;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+              d="m 183.47592,109.37241 h 6.37837"
+              id="path4" />
+          </g>
+          <g
+            id="g6"
+            transform="matrix(1.530704,0,0,1,-149.09873,1.0264031e-5)"
+            style="stroke-width:0.92032074;stroke-dasharray:none">
+            <path
+              style="fill:#ffffff;fill-opacity:0;stroke:var(--color);stroke-width:0.92032074;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+              d="m 177.24403,109.37241 h 6.37837"
+              id="path5" />
+            <path
+              style="fill:#ffffff;fill-opacity:0;stroke:var(--color);stroke-width:0.92032074;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+              d="m 183.47592,109.37241 h 6.37837"
+              id="path6" />
+          </g>
+          <g
+            id="g12"
+            transform="matrix(0,1.530704,-1,0,267.42324,-197.37968)"
+            style="stroke-width:0.92032074;stroke-dasharray:none">
+            <path
+              style="fill:#ffffff;fill-opacity:0;stroke:var(--color);stroke-width:0.92032074;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+              d="m 177.24403,109.37241 h 6.37837"
+              id="path11" />
+            <path
+              style="fill:#ffffff;fill-opacity:0;stroke:var(--color);stroke-width:0.92032074;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+              d="m 183.47592,109.37241 h 6.37837"
+              id="path12" />
+          </g>
+          <g
+            id="g14"
+            transform="matrix(0,1.530704,-1,0,267.42324,-146.21142)"
+            style="stroke-width:0.92032074;stroke-dasharray:none">
+            <path
+              style="fill:#ffffff;fill-opacity:0;stroke:var(--color);stroke-width:0.92032074;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+              d="m 177.24403,109.37241 h 6.37837"
+              id="path13" />
+            <path
+              style="fill:#ffffff;fill-opacity:0;stroke:var(--color);stroke-width:0.92032074;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+              d="m 183.47592,109.37241 h 6.37837"
+              id="path14" />
+          </g>
+        </g>
+        <g
+          id="g21">
+          <path
+            style="fill:#ffffff;fill-opacity:0;stroke:var(--color);stroke-width:2.11667;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+            d="M 0.52916825,30.126831 V 1.0583333 l 54.47007375,1e-6"
+            id="path15" />
+          <path
+            style="fill:#ffffff;fill-opacity:0;stroke:var(--color);stroke-width:2.11667;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+            d="M 196.85,30.126831 V 1.0583333 l -54.47008,1e-6"
+            id="path16" />
+          <path
+            style="fill:#ffffff;fill-opacity:0;stroke:var(--color);stroke-width:2.11667;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+            d="m 0.52916825,102.16483 v 29.0685 H 54.999242"
+            id="path17" />
+          <path
+            style="fill:#ffffff;fill-opacity:0;stroke:var(--color);stroke-width:2.11667;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+            d="m 196.85,102.16483 v 29.0685 h -54.47008"
+            id="path18" />
+        </g>
+        <g
+          id="g22">
+          <text
+            xml:space="preserve"
+            style="font-size:8.70193px;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;text-align:center;writing-mode:lr-tb;direction:ltr;text-anchor:middle;fill:var(--color);fill-opacity:1;stroke:var(--color);stroke-width:0;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+            x="27.107025"
+            y="14.164822"
+            id="text21"
+            transform="scale(1.0141515,0.98604597)"><tspan
+              id="tspan21"
+              style="fill:var(--color);fill-opacity:1;stroke-width:0;stroke-dasharray:none"
+              x="27.107025"
+              y="14.164822">REC</tspan></text>
+          <ellipse
+            style="fill:#fe0000;fill-opacity:1;stroke:var(--color);stroke-width:0;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
+            id="path21"
+            cx="12.21787"
+            cy="10.994022"
+            rx="3.1572769"
+            ry="3.0208659" />
+        </g>
+      </g>
+    </svg>
+
+    <div class="time">
+      <span class="text" id="clock"></span>
+    </div>
+
+    <div class="rotate-button" onclick="document.getElementById('photo').classList.toggle('rotated');">
+      <svg
+        width="60"
+        height="60"
+        viewBox="0 0 6.3499999 6.35"
+        version="1.1"
+        id="svg1"
+        xmlns="http://www.w3.org/2000/svg"
+        xmlns:svg="http://www.w3.org/2000/svg">
+        <defs
+          id="defs1">
+          <marker
+            style="overflow:visible"
+            id="Triangle"
+            refX="0"
+            refY="0"
+            orient="auto-start-reverse"
+            markerWidth="1"
+            markerHeight="1"
+            viewBox="0 0 1 1"
+            preserveAspectRatio="xMidYMid">
+            <path
+              transform="scale(0.5)"
+              style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+              d="M 5.77,0 -2.88,5 V -5 Z"
+              id="path135" />
+          </marker>
+        </defs>
+        <g
+          id="layer1">
+          <path
+            style="fill:#474747;fill-opacity:0;stroke:var(--color);stroke-width:0.430338;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;marker-start:url(#Triangle)"
+            id="path4"
+            d="M -2.0711025,1.5706284 A 2.7034926,2.4660258 0 0 1 0.31990284,3.8487053 2.7034926,2.4660258 0 0 1 -1.7000482,6.4082834 2.7034926,2.4660258 0 0 1 -4.8271936,5.0630054"
+            transform="matrix(0.15733141,-0.98754586,0.97649435,0.21554301,0,0)" />
+        </g>
+      </svg>
+    </div>
+
+    <div class="button-container">
+      <div class="button">
+        <div class="text">
+          Action 1
+        </div>
+      </div>
+      <div class="button">
+        <div class="text">
+          Action 2
+        </div>
+      </div>
+      <div class="button">
+        <div class="text">
+          Action 3
+        </div>
+      </div>
+      <div class="button">
+        <div class="text">
+          Action 4
+        </div>
+      </div>
+      <div class="button">
+        <div class="text">
+          Action 5
+        </div>
+      </div>
+      <div class="button">
+        <div class="text">
+          Action 6
+        </div>
+      </div>
+    </div>
     <script>
-      var slider = document.getElementById("servoSlider");
-      var servoP = document.getElementById("servoPos");
-      servoP.innerHTML = slider.value;
-      slider.oninput = function () {
-        slider.value = this.value;
-        servoP.innerHTML = this.value;
-      };
-      $.ajaxSetup({ timeout: 1000 });
-      function servo(pos) {
-        $.get("/?value=" + pos + "&");
-        {
-          Connection: close;
-        }
+      var deg = 0;
+
+      function rotatePhoto() {
+        var img = document.getElementById("photo");
+        deg += 180 % 360;
+        img.style.transform = "rotate(" + deg + "deg)";
       }
+    </script>
+    <script>
+      (function () {
+
+        var clockElement = document.getElementById( "clock" );
+
+        function updateClock ( clock ) {
+          clock.innerHTML = new Date().toLocaleTimeString();
+        }
+
+        function capturePhoto() {
+          var xhr = new XMLHttpRequest();
+          xhr.onreadystatechange = function() {
+            if (this.status == 200) {
+              let canvas = document.getElementById("photo");
+              console.log(this.responseText.length)
+              if (this.responseText.length > 0) {
+                console.log("Change",this.responseText.length)
+                canvas.src = "data:image/jpg;base64," + this.responseText;
+              }
+            }
+          };
+          xhr.open('GET', "/capture", true);
+          xhr.send();
+        }
+
+        setInterval(function () {
+            updateClock( clockElement );
+        }, 1000);
+
+        setInterval(capturePhoto, 10000);
+      }());
     </script>
   </body>
 </html>

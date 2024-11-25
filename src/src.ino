@@ -20,8 +20,6 @@
 #include "soc/rtc_cntl_reg.h"  // Disable brownour problems
 #include "driver/rtc_io.h"
 #include <ESPAsyncWebServer.h>
-#include <StringArray.h>
-#include <SPIFFS.h>
 #include <base64.h>
 #include <FS.h>
 
@@ -34,11 +32,6 @@ IPAddress NMask(255, 255, 255, 0);
 
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
-
-boolean takeNewPhoto = false;
-
-// Photo File Name to save in SPIFFS
-#define FILE_PHOTO "/photo.jpg"
 
 // OV2640 camera module pins (CAMERA_MODEL_AI_THINKER)
 #define PWDN_GPIO_NUM     32
@@ -71,6 +64,24 @@ const char index_html[] PROGMEM = R"rawliteral(
       --inv-color: rgb(0,0,0);
     }
 
+    .light-mode {
+      --color: rgb(0,0,0);
+      --inv-color: rgb(255,255,255);
+    }
+
+    #photo-container{
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #photo {
+      height: 100%;
+      width: 100%;
+    }
+
     .rotated{
       transform:rotate(180deg);
     }
@@ -89,6 +100,21 @@ const char index_html[] PROGMEM = R"rawliteral(
       width: 100%;
     }
 
+    .theme-button {
+      position: absolute;
+      top: 15%;
+      right: 25%;
+      padding: 10px 10px 10px 10px;
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+
+      svg {
+        stroke: var(--color);
+        fill: var(--inv-color);
+      }
+    }
+
     .rotate-button {
       position: absolute;
       top: 15%;
@@ -96,10 +122,19 @@ const char index_html[] PROGMEM = R"rawliteral(
       padding: 10px 10px 10px 10px;
       width: 60px;
       height: 60px;
-      &:hover {
-        background-color: rgb(0,0,255);
-      }
       border-radius: 10px;
+
+      &:hover {
+        background-color: var(--color);
+        opacity: 50%;
+        svg {
+          stroke: var(--inv-color);
+        }
+      }
+
+      svg {
+        stroke: var(--color);
+      }
     }
 
     .text {
@@ -146,8 +181,10 @@ const char index_html[] PROGMEM = R"rawliteral(
     }
   </style>
 </head>
-<body>
-  <img src="saved-photo" id="photo" class="background-img" width="100%" height="100%"/>
+<body id="body">
+  <div id="photo-container">
+    <img id="photo"/>
+  </div>
   <svg
     viewBox="0 0 198.4375 132.29166"
     version="1.1"
@@ -272,13 +309,42 @@ const char index_html[] PROGMEM = R"rawliteral(
     <span class="text" id="clock"></span>
   </div>
 
-  <div class="rotate-button"  onclick="document.getElementById('photo').classList.toggle('rotated');">
+  <div class="theme-button" onclick="document.getElementById('body').classList.toggle('light-mode');">
     <svg
       width="60"
       height="60"
       viewBox="0 0 6.3499999 6.35"
       version="1.1"
       id="svg1"
+      stroke="current"
+      fill="current"
+      xmlns="http://www.w3.org/2000/svg"
+      xmlns:svg="http://www.w3.org/2000/svg">
+      <defs
+        id="defs1" />
+      <g
+        id="layer1">
+        <path
+          style="fill-opacity:1;stroke-width:0.593989;stroke-linecap:round;stroke-linejoin:round"
+          id="path1"
+          d="M 3.1706061,6.0529757 A 2.8830538,2.8777454 0 0 1 0.67380834,4.614103 2.8830538,2.8777454 0 0 1 0.67380833,1.7363576 2.8830538,2.8777454 0 0 1 3.1706061,0.29748487 V 3.1752303 Z" />
+        <path
+          style="fill:var(--color);fill-opacity:1;stroke-width:0.593989;stroke-linecap:round;stroke-linejoin:round"
+          id="path2"
+          d="m -3.1701577,6.0524852 a 2.8830538,2.8777454 0 0 1 -2.4967978,-1.4388726 2.8830538,2.8777454 0 0 1 0,-2.8777455 2.8830538,2.8777454 0 0 1 2.4967978,-1.43887265 V 3.1747398 Z"
+          transform="scale(-1,1)" />
+      </g>
+    </svg>
+  </div>
+
+  <div class="rotate-button" onclick="document.getElementById('photo-container').classList.toggle('rotated');">
+    <svg
+      width="60"
+      height="60"
+      viewBox="0 0 6.3499999 6.35"
+      version="1.1"
+      id="svg1"
+      stroke="current"
       xmlns="http://www.w3.org/2000/svg"
       xmlns:svg="http://www.w3.org/2000/svg">
       <defs
@@ -303,7 +369,7 @@ const char index_html[] PROGMEM = R"rawliteral(
       <g
         id="layer1">
         <path
-          style="fill:#474747;fill-opacity:0;stroke:var(--color);stroke-width:0.430338;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;marker-start:url(#Triangle)"
+          style="fill:#474747;fill-opacity:0;stroke-width:0.430338;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;marker-start:url(#Triangle)"
           id="path4"
           d="M -2.0711025,1.5706284 A 2.7034926,2.4660258 0 0 1 0.31990284,3.8487053 2.7034926,2.4660258 0 0 1 -1.7000482,6.4082834 2.7034926,2.4660258 0 0 1 -4.8271936,5.0630054"
           transform="matrix(0.15733141,-0.98754586,0.97649435,0.21554301,0,0)" />
@@ -312,34 +378,24 @@ const char index_html[] PROGMEM = R"rawliteral(
   </div>
 
   <div class="button-container">
-    <div class="button">
+    <div class="button" onclick="var xhr = new XMLHttpRequest();xhr.open('POST', '/stop', true);xhr.send();">
       <div class="text">
-        Action 1
+        STOP
       </div>
     </div>
-    <div class="button">
+    <div class="button" onclick="var xhr = new XMLHttpRequest();xhr.open('POST', '/walk', true);xhr.send();">
       <div class="text">
-        Action 2
+        FWD
       </div>
     </div>
-    <div class="button">
+    <div class="button" onclick="var xhr = new XMLHttpRequest();xhr.open('POST', '/rot_clk', true);xhr.send();">
       <div class="text">
-        Action 3
+        ROT CLK
       </div>
     </div>
-    <div class="button">
+    <div class="button" onclick="var xhr = new XMLHttpRequest();xhr.open('POST', '/rot_iclk', true);xhr.send();">
       <div class="text">
-        Action 4
-      </div>
-    </div>
-    <div class="button">
-      <div class="text">
-        Action 5
-      </div>
-    </div>
-    <div class="button">
-      <div class="text">
-        Action 6
+        ROT ICLK
       </div>
     </div>
   </div>
@@ -358,10 +414,12 @@ const char index_html[] PROGMEM = R"rawliteral(
       xhr.onreadystatechange = function() {
         if (this.status == 200) {
           let canvas = document.getElementById("photo");
-          console.log(this.responseText.length)
           if (this.responseText.length > 0) {
-            console.log("Change",this.responseText.length)
-            canvas.src = "data:image/jpg;base64," + this.responseText;
+            let base64 = this.responseText;
+            var base64regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/;
+            if (base64regex.test(base64)) {
+              canvas.src = "data:image/jpeg;base64," + base64;
+            }
           }
         }
       };
@@ -378,6 +436,22 @@ const char index_html[] PROGMEM = R"rawliteral(
 </script>
 </html>)rawliteral";
 
+void walk(AsyncWebServerRequest *request) {
+  Serial.println("Walk");
+}
+
+void rot_clock(AsyncWebServerRequest *request) {
+  Serial.println("Rot Clock");
+}
+
+void rot_inv_clock(AsyncWebServerRequest *request) {
+  Serial.println("Rot Inverse Clock");
+}
+
+void stop(AsyncWebServerRequest *request) {
+  Serial.println("Stop");
+}
+
 void setup() {
   // Serial port for debugging purposes
   Serial.begin(115200);
@@ -387,18 +461,6 @@ void setup() {
   WiFi.softAP(ssid, password);
   delay(100);
   WiFi.softAPConfig(Ip, Ip, NMask);
-  // while (WiFi.status() != WL_CONNECTED) {
-  //   delay(1000);
-  //   Serial.println("Connecting to WiFi...");
-  // }
-  if (!SPIFFS.begin(true)) {
-    Serial.println("An Error has occurred while mounting SPIFFS");
-    ESP.restart();
-  }
-  else {
-    delay(500);
-    Serial.println("SPIFFS mounted successfully");
-  }
 
   // Print ESP32 Local IP Address
   Serial.print("IP Address: http://");
@@ -430,19 +492,11 @@ void setup() {
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
 
-  if (psramFound()) {
-    config.frame_size = FRAMESIZE_UXGA;
-    config.jpeg_quality = 10;
-    config.fb_count = 2;
-  } else {
-    config.frame_size = FRAMESIZE_SVGA;
-    config.jpeg_quality = 12;
-    config.fb_count = 1;
-  }
-
+  // Small image in order to have high frequency
   config.frame_size = FRAMESIZE_CIF;
   config.jpeg_quality = 12;
-  config.fb_count = 2;
+  config.fb_count = 4;
+
   // Camera init
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
@@ -463,16 +517,16 @@ void setup() {
     if (fb) {
       String encoded = base64::encode(fb->buf, fb->len);
       const char* img = encoded.c_str();
-      Serial.println(fb->len);
       request->send_P(200, "text/plain", img);
     }
 
     esp_camera_fb_return(fb);
   });
 
-  server.on("/saved-photo", HTTP_GET, [](AsyncWebServerRequest * request) {
-    request->send(SPIFFS, FILE_PHOTO, "image/jpg", false);
-  });
+  server.on("/walk", HTTP_POST, walk);
+  server.on("/stop", HTTP_POST, stop);
+  server.on("/rot_clk", HTTP_POST, rot_clock);
+  server.on("/rot_iclk", HTTP_POST, rot_inv_clock);
 
   // Start server
   server.begin();

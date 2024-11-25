@@ -12,6 +12,24 @@
         --inv-color: rgb(0,0,0);
       }
 
+      .light-mode {
+        --color: rgb(0,0,0);
+        --inv-color: rgb(255,255,255);
+      }
+
+      #photo-container{
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .photo {
+        height: 100%;
+        width: 100%;
+      }
+
       .rotated{
         transform:rotate(180deg);
       }
@@ -30,6 +48,21 @@
         width: 100%;
       }
 
+      .theme-button {
+        position: absolute;
+        top: 15%;
+        right: 25%;
+        padding: 10px 10px 10px 10px;
+        width: 60px;
+        height: 60px;
+        border-radius: 10px;
+
+        svg {
+          stroke: var(--color);
+          fill: var(--inv-color);
+        }
+      }
+
       .rotate-button {
         position: absolute;
         top: 15%;
@@ -37,10 +70,19 @@
         padding: 10px 10px 10px 10px;
         width: 60px;
         height: 60px;
-        &:hover {
-          background-color: rgb(0,0,255);
-        }
         border-radius: 10px;
+
+        &:hover {
+          background-color: var(--color);
+          opacity: 50%;
+          svg {
+            stroke: var(--inv-color);
+          }
+        }
+
+        svg {
+          stroke: var(--color);
+        }
       }
 
       .text {
@@ -88,8 +130,10 @@
     </style>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   </head>
-  <body>
-    <img id="photo" src='fondo6.png' width="100%" height="100%"/>
+  <body id="body">
+    <div id="photo-container">
+      <img id="photo" class="photo" src='fondo6.png'/>
+    </div>
 
     <svg
       viewBox="0 0 198.4375 132.29166"
@@ -215,13 +259,42 @@
       <span class="text" id="clock"></span>
     </div>
 
-    <div class="rotate-button" onclick="document.getElementById('photo').classList.toggle('rotated');">
+    <div class="theme-button" onclick="document.getElementById('body').classList.toggle('light-mode');">
       <svg
         width="60"
         height="60"
         viewBox="0 0 6.3499999 6.35"
         version="1.1"
         id="svg1"
+        stroke="current"
+        fill="current"
+        xmlns="http://www.w3.org/2000/svg"
+        xmlns:svg="http://www.w3.org/2000/svg">
+        <defs
+          id="defs1" />
+        <g
+          id="layer1">
+          <path
+            style="fill-opacity:1;stroke-width:0.593989;stroke-linecap:round;stroke-linejoin:round"
+            id="path1"
+            d="M 3.1706061,6.0529757 A 2.8830538,2.8777454 0 0 1 0.67380834,4.614103 2.8830538,2.8777454 0 0 1 0.67380833,1.7363576 2.8830538,2.8777454 0 0 1 3.1706061,0.29748487 V 3.1752303 Z" />
+          <path
+            style="fill:var(--color);fill-opacity:1;stroke-width:0.593989;stroke-linecap:round;stroke-linejoin:round"
+            id="path2"
+            d="m -3.1701577,6.0524852 a 2.8830538,2.8777454 0 0 1 -2.4967978,-1.4388726 2.8830538,2.8777454 0 0 1 0,-2.8777455 2.8830538,2.8777454 0 0 1 2.4967978,-1.43887265 V 3.1747398 Z"
+            transform="scale(-1,1)" />
+        </g>
+      </svg>
+    </div>
+
+    <div class="rotate-button" onclick="document.getElementById('photo-container').classList.toggle('rotated');">
+      <svg
+        width="60"
+        height="60"
+        viewBox="0 0 6.3499999 6.35"
+        version="1.1"
+        id="svg1"
+        stroke="current"
         xmlns="http://www.w3.org/2000/svg"
         xmlns:svg="http://www.w3.org/2000/svg">
         <defs
@@ -246,7 +319,7 @@
         <g
           id="layer1">
           <path
-            style="fill:#474747;fill-opacity:0;stroke:var(--color);stroke-width:0.430338;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;marker-start:url(#Triangle)"
+            style="fill:#474747;fill-opacity:0;stroke-width:0.430338;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;marker-start:url(#Triangle)"
             id="path4"
             d="M -2.0711025,1.5706284 A 2.7034926,2.4660258 0 0 1 0.31990284,3.8487053 2.7034926,2.4660258 0 0 1 -1.7000482,6.4082834 2.7034926,2.4660258 0 0 1 -4.8271936,5.0630054"
             transform="matrix(0.15733141,-0.98754586,0.97649435,0.21554301,0,0)" />
@@ -255,7 +328,7 @@
     </div>
 
     <div class="button-container">
-      <div class="button">
+      <div class="button" onclick="var xhr = new XMLHttpRequest();xhr.open('POST', '/action', true);xhr.send();">
         <div class="text">
           Action 1
         </div>
@@ -318,6 +391,23 @@
           };
           xhr.open('GET', "/capture", true);
           xhr.send();
+        }
+
+        async function isBase64UrlImage(base64String) {
+          let image = new Image()
+          image.src = base64String
+          return await (new Promise((resolve)=>{
+            image.onload = function () {
+              if (image.height === 0 || image.width === 0) {
+                resolve(false);
+                return;
+              }
+              resolve(true)
+            }
+            image.onerror = () =>{
+              resolve(false)
+            }
+          }))
         }
 
         setInterval(function () {

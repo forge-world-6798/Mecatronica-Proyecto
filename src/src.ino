@@ -619,7 +619,7 @@ void loop() {
     Otto.walk(2, 1000, 1);
     break;
   case BWD:
-    Otto.walk(2, 1000, 1);
+    Otto.walk(2, 1000, -1);
     break;
   case ROTCLK:
     Otto.turn(2, 1000, 1);

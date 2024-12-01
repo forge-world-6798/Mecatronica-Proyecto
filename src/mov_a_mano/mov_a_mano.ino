@@ -20,8 +20,6 @@
 #include "soc/rtc_cntl_reg.h"  // Disable brownour problems
 #include "driver/rtc_io.h"
 #include <ESPAsyncWebServer.h>
-#include <SoftwareSerial.h>
-#include <Otto.h> //Requires you to have the Otto libraries installed within the Arduino IDE
 #include <base64.h>
 #include <ESP32Servo.h>
 
@@ -30,18 +28,18 @@
 ////////// 2:
 
 // Left foot forward walking rotation Speed
-int LFFWRS= 20;    // 0 = Slowest   90 = Fastest  Default = 12
+int LFFWRS= 12;    // 0 = Slowest   90 = Fastest  Default = 12
 
 // Right foot forward walking rotation Speed
-int RFFWRS= 20;   // 0 = Slowest   90 = Fastest  Default = 12
+int RFFWRS= 12;   // 0 = Slowest   90 = Fastest  Default = 12
 
 ////////// 3:
 
 // Left foot Backward walking rotation Speed
-int LFBWRS= 20;   // 0 = Slowest   90 = Fastest  Default = 12
+int LFBWRS= 12;   // 0 = Slowest   90 = Fastest  Default = 12
 
 // Right foot Backward walking rotation Speed
-int RFBWRS= 20;   // 0 = Slowest   90 = Fastest  Default = 12
+int RFBWRS= 12;   // 0 = Slowest   90 = Fastest  Default = 12
 
 ////////// 4:
 
@@ -60,14 +58,12 @@ int LATL= 85;   // 0 = Full Tilt Right   180 = Full Tilt Left   Default BASIC = 
 int RATL= 175;  // 0 = Full Tilt Right   180 = Full Tilt Left   Default BASIC = 175   Default HUMANOID = 150
 
 // Left Leg tilt right walking position
-int LATR= 60;   // 0 = Full Tilt Right   180 = Full Tilt Left   Default BASIC = 5   Default HUMANOID = 30
+int LATR= 5;   // 0 = Full Tilt Right   180 = Full Tilt Left   Default BASIC = 5   Default HUMANOID = 30
 
 // Right Leg tilt right walking position
 int RATR= 95;  // 0 = Full Tilt Right   180 = Full Tilt Left   Default BASIC = 95  Default HUMANOID = 100
 
 ////////// 6:
-
-Otto Otto;
 
 // Replace with your network credentials
 const char* ssid = "ESP32-CAM Access Point";
@@ -621,7 +617,57 @@ void Walk2() {
 }
 
 void Walk() {
-  int lt= map(100, 100, -100, 200, 700); 
+  int lt= map(0, 100, -100, 200, 700); 
+  int rt= map(0, 100, -100, 700, 200); 
+  int Interval1 = 250;
+  int Interval2 = 250 + rt;
+  int Interval3 = 250 + rt + 250;
+  int Interval4 = 250 + rt + 250 + lt;
+  int Interval5 = 250 + rt + 250 + lt + 50;
+  
+  if(millis() > currentmillis1 + Interval5)
+  {
+  currentmillis1 = millis();
+  }
+  
+  
+  if(millis() - currentmillis1 <= Interval1)
+  {   
+      myservoLeftLeg.attach(LeftLeg, 544, 2400);
+      myservoRightLeg.attach(RightLeg, 544, 2400);
+      myservoRightFoot.attach(RightFoot, 544, 2400);  
+      myservoLeftFoot.attach(LeftFoot, 544, 2400); 
+      
+      myservoLeftLeg.write(LATR); 
+      myservoRightLeg.write(RATR);
+  }
+      
+  if((millis() - currentmillis1 >= Interval1)&&(millis() - currentmillis1 <= Interval2))
+  {      
+      myservoRightFoot.write(90-RFFWRS);
+      
+  }
+
+  if((millis() - currentmillis1 >= Interval2)&&(millis() - currentmillis1 <= Interval3))
+  {  
+      myservoRightFoot.detach();
+      myservoLeftLeg.write(LATL); 
+      myservoRightLeg.write(RATL);
+  }
+
+  if((millis() - currentmillis1 >= Interval3)&&(millis() - currentmillis1 <= Interval4))
+  {       
+      myservoLeftFoot.write(90+LFFWRS);      
+  }  
+
+  if((millis() - currentmillis1 >= Interval4)&&(millis() - currentmillis1 <= Interval5))
+  {
+  myservoLeftFoot.detach();  
+  }
+}
+
+void RotCLK() {
+  int lt= map(-100, 100, -100, 200, 700); 
   int rt= map(100, 100, -100, 700, 200); 
   int Interval1 = 250;
   int Interval2 = 250 + rt;
@@ -668,46 +714,106 @@ void Walk() {
   {
   myservoLeftFoot.detach();  
   }
+}
 
+void RotICLK() {
+  int lt= map(100, 100, -100, 200, 700); 
+  int rt= map(-100, 100, -100, 700, 200); 
+  int Interval1 = 250;
+  int Interval2 = 250 + rt;
+  int Interval3 = 250 + rt + 250;
+  int Interval4 = 250 + rt + 250 + lt;
+  int Interval5 = 250 + rt + 250 + lt + 50;
+  
   if(millis() > currentmillis1 + Interval5)
-    {
-    currentmillis1 = millis();
-    }
-    
-    
-    if(millis() - currentmillis1 <= Interval1)
-    {   
-        myservoLeftLeg.attach(LeftLeg, 544, 2400);
-        myservoRightLeg.attach(RightLeg, 544, 2400);
-        myservoRightFoot.attach(RightFoot, 544, 2400);  
-        myservoLeftFoot.attach(LeftFoot, 544, 2400); 
-        
-        myservoLeftLeg.write(LATR); 
-        myservoRightLeg.write(RATR);
-    }
-        
-    if((millis() - currentmillis1 >= Interval1)&&(millis() - currentmillis1 <= Interval2))
-    {      
-        myservoRightFoot.write(90+RFBWRS);
-        
-    }
+  {
+  currentmillis1 = millis();
+  }
+  
+  
+  if(millis() - currentmillis1 <= Interval1)
+  {   
+      myservoLeftLeg.attach(LeftLeg, 544, 2400);
+      myservoRightLeg.attach(RightLeg, 544, 2400);
+      myservoRightFoot.attach(RightFoot, 544, 2400);  
+      myservoLeftFoot.attach(LeftFoot, 544, 2400); 
+      
+      myservoLeftLeg.write(LATR); 
+      myservoRightLeg.write(RATR);
+  }
+      
+  if((millis() - currentmillis1 >= Interval1)&&(millis() - currentmillis1 <= Interval2))
+  {      
+      myservoRightFoot.write(90-RFFWRS);
+      
+  }
 
-    if((millis() - currentmillis1 >= Interval2)&&(millis() - currentmillis1 <= Interval3))
-    {  
-        myservoRightFoot.detach();
-        myservoLeftLeg.write(LATL); 
-        myservoRightLeg.write(RATL);
-    }
+  if((millis() - currentmillis1 >= Interval2)&&(millis() - currentmillis1 <= Interval3))
+  {  
+      myservoRightFoot.detach();
+      myservoLeftLeg.write(LATL); 
+      myservoRightLeg.write(RATL);
+  }
 
-    if((millis() - currentmillis1 >= Interval3)&&(millis() - currentmillis1 <= Interval4))
-    {       
-        myservoLeftFoot.write(90-LFBWRS);      
-    }  
+  if((millis() - currentmillis1 >= Interval3)&&(millis() - currentmillis1 <= Interval4))
+  {       
+      myservoLeftFoot.write(90+LFFWRS);      
+  }  
 
-    if((millis() - currentmillis1 >= Interval4)&&(millis() - currentmillis1 <= Interval5))
-    {
-    myservoLeftFoot.detach();  
-    }
+  if((millis() - currentmillis1 >= Interval4)&&(millis() - currentmillis1 <= Interval5))
+  {
+  myservoLeftFoot.detach();  
+  }
+}
+
+void Back() {
+  int lt= map(0, 100, -100, 200, 700); 
+  int rt= map(0, 100, -100, 700, 200); 
+  int Interval1 = 250;
+  int Interval2 = 250 + rt;
+  int Interval3 = 250 + rt + 250;
+  int Interval4 = 250 + rt + 250 + lt;
+  int Interval5 = 250 + rt + 250 + lt + 50;
+  
+  if(millis() > currentmillis1 + Interval5)
+  {
+  currentmillis1 = millis();
+  }
+  
+  
+  if(millis() - currentmillis1 <= Interval1)
+  {   
+      myservoLeftLeg.attach(LeftLeg, 544, 2400);
+      myservoRightLeg.attach(RightLeg, 544, 2400);
+      myservoRightFoot.attach(RightFoot, 544, 2400);  
+      myservoLeftFoot.attach(LeftFoot, 544, 2400); 
+      
+      myservoLeftLeg.write(LATR); 
+      myservoRightLeg.write(RATR);
+  }
+      
+  if((millis() - currentmillis1 >= Interval1)&&(millis() - currentmillis1 <= Interval2))
+  {      
+      myservoRightFoot.write(90+RFFWRS);
+      
+  }
+
+  if((millis() - currentmillis1 >= Interval2)&&(millis() - currentmillis1 <= Interval3))
+  {  
+      myservoRightFoot.detach();
+      myservoLeftLeg.write(LATL); 
+      myservoRightLeg.write(RATL);
+  }
+
+  if((millis() - currentmillis1 >= Interval3)&&(millis() - currentmillis1 <= Interval4))
+  {       
+      myservoLeftFoot.write(90-LFFWRS);      
+  }  
+
+  if((millis() - currentmillis1 >= Interval4)&&(millis() - currentmillis1 <= Interval5))
+  {
+  myservoLeftFoot.detach();  
+  }
 }
 
 void walk(AsyncWebServerRequest *request) {
@@ -822,20 +928,19 @@ void loop() {
   switch (do_action)
   {
   case FWD:
-    //Otto.walk(2, 2000, 1);
     Walk();
     break;
   case BWD:
-    Otto.walk(2, 2000, -1);
+    Back();
     break;
   case ROTCLK:
-    Otto.turn(2, 1000, -1);
+    RotCLK();
     break;
   case ROTICLK:
-    Otto.turn(2, 1000, 1);
+    RotICLK();
     break;
   default:
-    Walk();
+    Home();
     break;
   }
   delay(10);

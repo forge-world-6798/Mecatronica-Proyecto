@@ -20,8 +20,11 @@
 #include "soc/rtc_cntl_reg.h"  // Disable brownour problems
 #include "driver/rtc_io.h"
 #include <ESPAsyncWebServer.h>
+#include <SoftwareSerial.h>
+#include <Otto.h> //Requires you to have the Otto libraries installed within the Arduino IDE
 #include <base64.h>
-#include <FS.h>
+
+Otto Otto;
 
 // Replace with your network credentials
 const char* ssid = "ESP32-CAM Access Point";
@@ -50,6 +53,11 @@ AsyncWebServer server(80);
 #define VSYNC_GPIO_NUM    25
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
+
+#define LeftFoot 2 // Left Foot
+#define LeftLeg 13 // Left leg
+#define RightLeg 14 // Right leg
+#define RightFoot 15 // Right Foot
 
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html>
@@ -159,6 +167,7 @@ const char index_html[] PROGMEM = R"rawliteral(
       height: 50px;
       width: 100%;
       border-radius: 10px;
+      display: flex;
 
       &:hover {
         background-color: var(--color);
@@ -166,6 +175,10 @@ const char index_html[] PROGMEM = R"rawliteral(
         .text {
           color: var(--inv-color);
         }
+      }
+
+      & .text{
+        margin: auto;
       }
     }
 
@@ -378,22 +391,72 @@ const char index_html[] PROGMEM = R"rawliteral(
   </div>
 
   <div class="button-container">
-    <div class="button" onclick="var xhr = new XMLHttpRequest();xhr.open('POST', '/stop', true);xhr.send();">
+    <div
+      id="bt1"
+      class="button"
+      onclick="document.getElementById('bt1').classList.toggle('selected');
+      document.getElementById('bt2').classList.remove('selected');
+      document.getElementById('bt3').classList.remove('selected');
+      document.getElementById('bt4').classList.remove('selected');
+      document.getElementById('bt5').classList.remove('selected');
+      var xhr = new XMLHttpRequest();xhr.open('POST', '/stop', true);xhr.send();"
+    >
       <div class="text">
         STOP
       </div>
     </div>
-    <div class="button" onclick="var xhr = new XMLHttpRequest();xhr.open('POST', '/walk', true);xhr.send();">
+    <div
+      id="bt2"
+      class="button"
+      onclick="document.getElementById('bt2').classList.toggle('selected');
+      document.getElementById('bt1').classList.remove('selected');
+      document.getElementById('bt3').classList.remove('selected');
+      document.getElementById('bt4').classList.remove('selected');
+      document.getElementById('bt5').classList.remove('selected');
+      var xhr = new XMLHttpRequest();xhr.open('POST', '/walk', true);xhr.send();"
+    >
       <div class="text">
         FWD
       </div>
     </div>
-    <div class="button" onclick="var xhr = new XMLHttpRequest();xhr.open('POST', '/rot_clk', true);xhr.send();">
+    <div
+      id="bt3"
+      class="button"
+      onclick="document.getElementById('bt3').classList.toggle('selected');
+      document.getElementById('bt1').classList.remove('selected');
+      document.getElementById('bt2').classList.remove('selected');
+      document.getElementById('bt4').classList.remove('selected');
+      document.getElementById('bt5').classList.remove('selected');
+      var xhr = new XMLHttpRequest();xhr.open('POST', '/back', true);xhr.send();"
+    >
+      <div class="text">
+        BWD
+      </div>
+    </div>
+    <div
+      id="bt4"
+      class="button"
+      onclick="document.getElementById('bt4').classList.toggle('selected');
+      document.getElementById('bt1').classList.remove('selected');
+      document.getElementById('bt2').classList.remove('selected');
+      document.getElementById('bt3').classList.remove('selected');
+      document.getElementById('bt5').classList.remove('selected');
+      var xhr = new XMLHttpRequest();xhr.open('POST', '/rot_clk', true);xhr.send();"
+    >
       <div class="text">
         ROT CLK
       </div>
     </div>
-    <div class="button" onclick="var xhr = new XMLHttpRequest();xhr.open('POST', '/rot_iclk', true);xhr.send();">
+    <div
+      id="bt5"
+      class="button"
+      onclick="document.getElementById('bt5').classList.toggle('selected');
+      document.getElementById('bt1').classList.remove('selected');
+      document.getElementById('bt2').classList.remove('selected');
+      document.getElementById('bt3').classList.remove('selected');
+      document.getElementById('bt4').classList.remove('selected');
+      var xhr = new XMLHttpRequest();xhr.open('POST', '/rot_iclk', true);xhr.send();"
+    >
       <div class="text">
         ROT ICLK
       </div>
@@ -436,20 +499,32 @@ const char index_html[] PROGMEM = R"rawliteral(
 </script>
 </html>)rawliteral";
 
+enum action {FWD, BWD, ROTCLK, ROTICLK, STOP};
+enum action do_action = STOP;
+
 void walk(AsyncWebServerRequest *request) {
   Serial.println("Walk");
+  do_action = FWD;
+}
+
+void back(AsyncWebServerRequest *request) {
+  Serial.println("Walk backwards");
+  do_action = BWD;
 }
 
 void rot_clock(AsyncWebServerRequest *request) {
   Serial.println("Rot Clock");
+  do_action = ROTCLK;
 }
 
 void rot_inv_clock(AsyncWebServerRequest *request) {
   Serial.println("Rot Inverse Clock");
+  do_action = ROTICLK;
 }
 
 void stop(AsyncWebServerRequest *request) {
   Serial.println("Stop");
+  do_action = STOP;
 }
 
 void setup() {
@@ -465,6 +540,9 @@ void setup() {
   // Print ESP32 Local IP Address
   Serial.print("IP Address: http://");
   Serial.println(WiFi.softAPIP());
+
+  Otto.init(LeftLeg, RightLeg, LeftFoot, RightFoot, true, 0);
+  Otto.home();
 
   // Turn-off the 'brownout detector'
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
@@ -524,6 +602,7 @@ void setup() {
   });
 
   server.on("/walk", HTTP_POST, walk);
+  server.on("/back", HTTP_POST, back);
   server.on("/stop", HTTP_POST, stop);
   server.on("/rot_clk", HTTP_POST, rot_clock);
   server.on("/rot_iclk", HTTP_POST, rot_inv_clock);
@@ -534,5 +613,23 @@ void setup() {
 }
 
 void loop() {
-  delay(1000);
+  switch (do_action)
+  {
+  case FWD:
+    Otto.walk(2, 1000, 1);
+    break;
+  case BWD:
+    Otto.walk(2, 1000, 1);
+    break;
+  case ROTCLK:
+    Otto.turn(2, 1000, 1);
+    break;
+  case ROTICLK:
+    Otto.turn(2, 1000, -1);
+    break;
+  default:
+    Otto.home();
+    break;
+  }
+  delay(10);
 }

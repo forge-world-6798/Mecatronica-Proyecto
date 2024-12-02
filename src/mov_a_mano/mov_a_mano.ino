@@ -66,7 +66,7 @@ int RATR= 95;  // 0 = Full Tilt Right   180 = Full Tilt Left   Default BASIC = 9
 ////////// 6:
 
 // Replace with your network credentials
-const char* ssid = "ESP32-CAM Access Point";
+const char* ssid = "WebWay";
 const char* password = "123456789";
 
 IPAddress Ip(192, 168, 1, 1);

@@ -27,7 +27,7 @@
 Otto Otto;
 
 // Replace with your network credentials
-const char* ssid = "ESP32-CAM Access Point";
+const char* ssid = "WebWay";
 const char* password = "123456789";
 
 IPAddress Ip(192, 168, 1, 1);

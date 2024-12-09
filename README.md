@@ -5,9 +5,10 @@
 # TODO:
 
 - [X]  Stl Piernas
+- [X]  STL cabeza
+- [X]  Frontend ESP
+- [X]  Andar
+- [X]  Bateria robot - 1000 mha
+- [X]  Pintar Robot
 - [ ]  crear STL brazo
-- [ ]  STL cabeza
-- [ ]  Frontend ESP
-- [ ]  Andar
-- [ ]  Bateria robot - 1000 mha
-- [ ]  Pintar Robot
+- [ ]  Servo brazo

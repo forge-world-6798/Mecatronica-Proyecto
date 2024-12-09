@@ -12,3 +12,5 @@
 - [X]  Pintar Robot
 - [ ]  crear STL brazo
 - [ ]  Servo brazo
+
+![padoru](https://github.com/forge-world-6798/Mecatronica-Proyecto/blob/main/media/gifs/padoru_dreadnaugh_opt.gif)

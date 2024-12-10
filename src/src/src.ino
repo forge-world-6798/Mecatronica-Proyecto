@@ -616,16 +616,16 @@ void loop() {
   switch (do_action)
   {
   case FWD:
-    Otto.walk(2, 1000, 1);
+    Otto.walk(2, 1500, -1);
     break;
   case BWD:
-    Otto.walk(2, 1000, -1);
+    Otto.walk(2, 1500, 1);
     break;
   case ROTCLK:
-    Otto.turn(2, 1000, -1);
+    Otto.turn(2, 1500, -1);
     break;
   case ROTICLK:
-    Otto.turn(2, 1000, 1);
+    Otto.turn(2, 1500, 1);
     break;
   default:
     Otto.home();
